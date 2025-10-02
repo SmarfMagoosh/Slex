@@ -2,7 +2,7 @@ ThisBuild / scalaVersion := "3.4.2"
 
 ThisBuild / organization := "com.slex"
 ThisBuild / name := "slex"
-ThisBuild / version := "0.1.0"
+ThisBuild / version := "0.1.1"
 
 
 lazy val root = (project in file("."))
