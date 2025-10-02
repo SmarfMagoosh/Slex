@@ -2,9 +2,8 @@
 .metals/
 .scala-build/
 .vscode/
-com/
+/com/
+/scala/
 target/
 project/project/
 project/target/
-*.class
-*.tasty

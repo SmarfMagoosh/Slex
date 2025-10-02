@@ -1,1 +1,6 @@
-java -jar ~/projects/slex/target/scala-3.3.2/slex.jar $1 $2
+if [ -d "./src/main/scala" ]; then
+    mkdir -p ./src/main/scala/parsing
+    java -jar ~/projects/slex/target/scala-3.3.2/slex.jar $1
+else
+    echo "src/main/scala does not exist"
+fi

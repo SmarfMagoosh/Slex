@@ -6,7 +6,7 @@
   import java.io.{File, PrintWriter}
 
   object CodeGen {
-    def generate(slexFile: String, output: String): Unit = {
+    def generate(slexFile: String): Unit = {
       val ast: SlexAtom = SlexParser(new File(slexFile)) match
         case SlexParser.Success(tree, _) => tree
         case SlexParser.Failure(msg, _) => throw new Exception(msg)
@@ -16,9 +16,9 @@
         case LANG(HEADER(NAME(name), _, _), _) => name
         case _ => throw new Exception("Error in slex file, no name specified")
 
-      val dfaFile = new File(output + s"/${langName}DFAs.txt")
-      val tokenTypeFile = new File(output + s"/${langName}TokenType.scala")
-      val lexerFile = new File(output + s"/${langName}Lexer.scala")
+      val dfaFile = new File(s"./${langName}DFAs.txt")
+      val tokenTypeFile = new File(s"./src/main/scala/parsing/${langName}TokenType.scala")
+      val lexerFile = new File(s"./src/main/scala/parsing/${langName}Lexer.scala")
       dfaFile.createNewFile()
       tokenTypeFile.createNewFile()
       lexerFile.createNewFile()
@@ -70,7 +70,7 @@
       lexerWriter.close()
 
       // generate token file
-      val f1 = new File(output + "/Token.scala")
+      val f1 = new File("./src/main/scala/parsing/Token.scala")
       f1.createNewFile()
       val pw1 = new PrintWriter(f1)
       pw1.write(
@@ -79,16 +79,15 @@
       )
       pw1.close()
 
-      val f2 = new File(output + s"/${langName}Lexer.scala")
+      val f2 = new File(s"./src/main/scala/parsing/${langName}Lexer.scala")
       f2.createNewFile()
       val pw2 = new PrintWriter(f2)
       pw2.write(
-        s"""import com.slex.automatons.DFA
+        s"""
+          |import com.slex.automatons.DFA
           |import scala.annotation.tailrec
-          |import scala.collection.mutable.Map as MMap
           |import java.io.File
           |import java.util.Scanner
-          |
           |
           |class ${langName}Lexer {
           |  private val automatons: List[(${langName}TokenType, DFA)] = {
