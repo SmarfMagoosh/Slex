@@ -3,7 +3,7 @@
 .scala-build/
 .vscode/
 com/
-scala/
+/scala/
 target/
 project/project/
 project/target/
