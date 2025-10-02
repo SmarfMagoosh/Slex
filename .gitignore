@@ -3,7 +3,8 @@
 .scala-build/
 .vscode/
 com/
-/scala/
 target/
 project/project/
 project/target/
+*.class
+*.tasty
