@@ -5,35 +5,38 @@ import java.util.Scanner
 import scala.util.parsing.combinator.RegexParsers
 
 object SlexParser extends RegexParsers {
-  def apply(s: String): ParseResult[SlexAtom] = parseAll(lang, s)
+  def apply(s: String): ParseResult[SlexAtom.LANG] = parseAll(lang, s)
 
-  def apply(f: File): ParseResult[SlexAtom] = {
+  def apply(f: File): ParseResult[SlexAtom.LANG] = {
     val scantron = new Scanner(f)
     val sb = new StringBuilder()
     while scantron.hasNextLine do sb.append(scantron.nextLine())
-    apply(sb.toString())
+    parseAll(lang, sb.toString())
   }
 
   // PARSER RULES
-  private def lang = header ~ rules ^^ { case h ~ r => SlexAtom.LANG(h, r) }
+  private def lang: Parser[SlexAtom.LANG] = 
+    header ~ rules ^^ { case h ~ r => SlexAtom.LANG(h, r) }
 
-  private def header = repN(2, "%") ~> fstRow ~ sndRow ~ thdRow <~ repN(2, "%") ^^ {
-    case fst ~ snd ~ thd => SlexAtom.HEADER(fst, snd, thd)
-  }
+  private def header: Parser[SlexAtom.HEADER] = 
+    repN(2, "%") ~> fstRow ~ sndRow ~ thdRow <~ repN(2, "%") ^^ {
+      case fst ~ snd ~ thd => SlexAtom.HEADER(fst, snd, thd)
+    }
 
-  private def fstRow = "%" ~> "language" ~> name ^^ identity
+  private def fstRow: Parser[SlexAtom.NAME] = 
+    "%" ~> "language" ~> name ^^ identity
 
-  private def sndRow = "%" ~> "keywords" ~> rep(token) ^^ identity
+  private def sndRow: Parser[List[SlexAtom.TOKEN]] = "%" ~> "keywords" ~> rep(token) ^^ identity
 
-  private def thdRow = "%" ~> "punctuation" ~> rep(token) ^^ identity
+  private def thdRow: Parser[List[SlexAtom.TOKEN]] = "%" ~> "punctuation" ~> rep(token) ^^ identity
 
-  private def name = """[A-Z][a-z]*""".r ^^ SlexAtom.NAME.apply
+  private def name: Parser[SlexAtom.NAME] = """[A-Z][a-z]*""".r ^^ SlexAtom.NAME.apply
 
-  private def token = """[A-Z]+""".r ^^ SlexAtom.TOKEN.apply
+  private def token: Parser[SlexAtom.TOKEN] = """[A-Z]+""".r ^^ SlexAtom.TOKEN.apply
 
-  private def rules = rep1(rule) ^^ SlexAtom.RULES.apply
+  private def rules: Parser[SlexAtom.RULES] = rep1(rule) ^^ SlexAtom.RULES.apply
 
-  private def rule = """([^;]+)|(\\;)""".r <~ ";" ^^ {
+  private def rule: Parser[SlexAtom.RULE] = """([^;]+)|(\\;)""".r <~ ";" ^^ {
     line =>
       val idx = line.lastIndexOf("=>")
       idx match

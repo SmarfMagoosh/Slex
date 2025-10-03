@@ -7,80 +7,69 @@
 
   object CodeGen {
     def generate(slexFile: String): Unit = {
-      val ast: SlexAtom = SlexParser(new File(slexFile)) match
+      val ast: SlexAtom.LANG = SlexParser(new File(slexFile)) match
         case SlexParser.Success(tree, _) => tree
         case SlexParser.Failure(msg, _) => throw new Exception(msg)
         case SlexParser.Error(msg, _) => throw new Exception(msg)
 
-      val langName: String = ast match
-        case LANG(HEADER(NAME(name), _, _), _) => name
-        case _ => throw new Exception("Error in slex file, no name specified")
+      val langName: String = ast.header.name.text
 
       val dfaFile = new File(s"./${langName}DFAs.txt")
       val tokenTypeFile = new File(s"./src/main/scala/parsing/${langName}TokenType.scala")
       val lexerFile = new File(s"./src/main/scala/parsing/${langName}Lexer.scala")
+
       dfaFile.createNewFile()
       tokenTypeFile.createNewFile()
       lexerFile.createNewFile()
 
       val dfaWriter = new PrintWriter(dfaFile)
-      val tokenTypeWriter = new PrintWriter(tokenTypeFile)
       val lexerWriter = new PrintWriter(lexerFile)
+      val tokenTypeWriter = new PrintWriter(tokenTypeFile)
 
-      // codegen headers
       tokenTypeWriter.write(s"enum ${langName}TokenType:\n")
       tokenTypeWriter.write("\tcase IGNORE\n")
 
-      // match the whole tree
-      ast match
-        case LANG(HEADER(_, keywords, punctuation), RULES(rules)) =>
-          keywords.foreach({
-            case TOKEN(token) =>
-              val dfa = AutomatonFactory.keywordDFA(token.toLowerCase)
-              dfaWriter.write(dfa.serialize(token))
-              tokenTypeWriter.write(s"\tcase $token\n")
-            case _ => throw new Exception("Error in slex file, expected a token")
-          })
-          punctuation.foreach({
-            case TOKEN(token) =>
-              val kw = Punctuation.aliasToPunc(token)
-              val dfa = AutomatonFactory.keywordDFA(kw)
-              dfaWriter.write(dfa.serialize(token))
-              tokenTypeWriter.write(s"\tcase $token\n")
-            case _ => throw new Exception("Error in slex file, expected a token")
-          })
-          val numRules = rules.length - 1
-          rules.zipWithIndex.foreach({
-            case (RULE(regex, output), i) =>
-              val dfa = AutomatonFactory.constructDFA(regex)
-              val token = output match
-                case TOKEN(t) => t
-                case _ => throw new Exception("Error in slex file, expected a token")
-              dfaWriter.write(dfa.serialize(token))
-              if token != "IGNORE" then tokenTypeWriter.write(s"\tcase $token\n")
-            case _ => throw new Exception("Error in slex file, expected a rule")
-          })
-        case _ => throw new Exception("Error in slex file: improper format.")
+      // generate tokens and DFAs for keywords
+      ast.header.keywords.foreach({ token =>
+          val t = token.text
+          val dfa = AutomatonFactory.keywordDFA(t.toLowerCase)
+          dfaWriter.write(dfa.serialize(t))
+          tokenTypeWriter.write(s"\tcase $t\n")
+      })
+
+      // generate tokens and DFAs for valid punctuation
+      ast.header.punctuation.foreach({ token =>
+        val t = token.text
+        val kw = Punctuation.aliasToPunc(t)
+        val dfa = AutomatonFactory.keywordDFA(kw)
+        dfaWriter.write(dfa.serialize(t))
+        tokenTypeWriter.write(s"\tcase $t\n")
+      })
+
+      // generate tokens and DFAs for regex rules
+      val numRules = ast.rules.rules.length - 1
+      ast.rules.rules.zipWithIndex.foreach({ case (RULE(regex, TOKEN(token)), i) =>
+        val dfa = AutomatonFactory.constructDFA(regex)
+        dfaWriter.write(dfa.serialize(token))
+        if token != "IGNORE" then tokenTypeWriter.write(s"\tcase $token\n")
+      })
 
       // codegen footers
       tokenTypeWriter.write(s"end ${langName}TokenType")
 
-      dfaWriter.close()
-      tokenTypeWriter.close()
-      lexerWriter.close()
-
       // generate token file
       val f1 = new File("./src/main/scala/parsing/Token.scala")
       f1.createNewFile()
+
       val pw1 = new PrintWriter(f1)
       pw1.write(
-        s"""case class Token(tokenType: ${langName}TokenType, lexeme: String, lineNum: Int, linePos: Int)
-          |""".stripMargin
+        s"case class Token(tokenType: ${langName}TokenType, lexeme: String, lineNum: Int, linePos: Int)\n"
       )
-      pw1.close()
 
+      // generate lexer file
       val f2 = new File(s"./src/main/scala/parsing/${langName}Lexer.scala")
       f2.createNewFile()
+
       val pw2 = new PrintWriter(f2)
       pw2.write(
         s"""
@@ -221,6 +210,12 @@
           |
           |""".stripMargin
       )
+      
+      // always close your printwriters
+      dfaWriter.close()
+      tokenTypeWriter.close()
+      lexerWriter.close()
+      pw1.close()
       pw2.close()
     }
   }
