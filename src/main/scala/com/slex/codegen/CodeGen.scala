@@ -26,7 +26,7 @@
       val lexerWriter = new PrintWriter(lexerFile)
       val tokenTypeWriter = new PrintWriter(tokenTypeFile)
 
-      tokenTypeWriter.write(s"enum ${langName}TokenType:\n")
+      tokenTypeWriter.write(s"package ${ast.header.`package`.text}\n\nenum ${langName}TokenType:\n")
       tokenTypeWriter.write("\tcase IGNORE\n")
 
       // generate tokens and DFAs for keywords
@@ -63,7 +63,7 @@
 
       val pw1 = new PrintWriter(f1)
       pw1.write(
-        s"case class Token(tokenType: ${langName}TokenType, lexeme: String, lineNum: Int, linePos: Int)\n"
+        s"package ${ast.header.`package`.text}\n\ncase class Token(tokenType: ${langName}TokenType, lexeme: String, lineNum: Int, linePos: Int)\n"
       )
 
       // generate lexer file
@@ -72,11 +72,13 @@
 
       val pw2 = new PrintWriter(f2)
       pw2.write(
-        s"""
+        s"""package ${ast.header.`package`.text}
+          |
           |import com.slex.automatons.DFA
           |import scala.annotation.tailrec
           |import java.io.File
           |import java.util.Scanner
+          |import ${ast.header.`package`.text}.Token
           |
           |class ${langName}Lexer {
           |  private val automatons: List[(${langName}TokenType, DFA)] = {

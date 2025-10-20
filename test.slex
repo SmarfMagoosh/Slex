@@ -1,0 +1,8 @@
+%%
+%language TestLang
+%keywords HELLO WORLD
+%punctuation PERIOD LPAR RPAR
+%package com.hello.world
+%%
+
+[1-9][0-9]* => NUMBER ;

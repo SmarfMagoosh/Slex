@@ -3,8 +3,15 @@ package com.slex.parsers
 import java.io.File
 import java.util.Scanner
 import scala.util.parsing.combinator.RegexParsers
+import scala.util.matching.Regex
 
 object SlexParser extends RegexParsers {
+  val lower: Regex = "[a-z][a-z_]*".r
+  val upper: Regex = "[A-Z][A-Z_]*".r
+  val any: Regex = "[A-Za-z0-9_]+".r
+  val upperCamel: Regex = "([A-Z][a-z]*)+".r
+  val lowerCamel: Regex = "[a-z]+([A-Z][a-z]*)+".r
+
   def apply(s: String): ParseResult[SlexAtom.LANG] = parseAll(lang, s)
 
   def apply(f: File): ParseResult[SlexAtom.LANG] = {
@@ -15,12 +22,11 @@ object SlexParser extends RegexParsers {
   }
 
   // PARSER RULES
-  private def lang: Parser[SlexAtom.LANG] = 
-    header ~ rules ^^ { case h ~ r => SlexAtom.LANG(h, r) }
+  private def lang: Parser[SlexAtom.LANG] = header ~ rules ^^ { case h ~ r => SlexAtom.LANG(h, r) }
 
   private def header: Parser[SlexAtom.HEADER] = 
-    repN(2, "%") ~> fstRow ~ sndRow ~ thdRow <~ repN(2, "%") ^^ {
-      case fst ~ snd ~ thd => SlexAtom.HEADER(fst, snd, thd)
+    "%%" ~> fstRow ~ sndRow ~ thdRow ~ fthRow <~ "%%" ^^ {
+      case fst ~ snd ~ thd ~ fth => SlexAtom.HEADER(fst, snd, thd, fth)
     }
 
   private def fstRow: Parser[SlexAtom.NAME] = 
@@ -30,9 +36,11 @@ object SlexParser extends RegexParsers {
 
   private def thdRow: Parser[List[SlexAtom.TOKEN]] = "%" ~> "punctuation" ~> rep(token) ^^ identity
 
-  private def name: Parser[SlexAtom.NAME] = """[A-Z][a-z]*""".r ^^ SlexAtom.NAME.apply
+  private def fthRow: Parser[SlexAtom.NAME] = "%" ~> "package" ~> "[a-z]+(\\.[a-z]+)*".r ^^ SlexAtom.NAME.apply
 
-  private def token: Parser[SlexAtom.TOKEN] = """[A-Z]+""".r ^^ SlexAtom.TOKEN.apply
+  private def name: Parser[SlexAtom.NAME] = upperCamel ^^ SlexAtom.NAME.apply
+
+  private def token: Parser[SlexAtom.TOKEN] = upper ^^ SlexAtom.TOKEN.apply
 
   private def rules: Parser[SlexAtom.RULES] = rep1(rule) ^^ SlexAtom.RULES.apply
 

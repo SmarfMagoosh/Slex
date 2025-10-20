@@ -1,0 +1,2 @@
+add optional package declaration to DSL
+remove token type from generated code. have it on backend

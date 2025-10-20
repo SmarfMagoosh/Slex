@@ -6,7 +6,7 @@ package com.slex.parsers
 enum SlexAtom:
   case LANG   (header: SlexAtom.HEADER, rules: SlexAtom.RULES)
 
-  case HEADER (name: SlexAtom.NAME, keywords: List[SlexAtom.TOKEN], punctuation: List[SlexAtom.TOKEN])
+  case HEADER (name: SlexAtom.NAME, keywords: List[SlexAtom.TOKEN], punctuation: List[SlexAtom.TOKEN], `package`: SlexAtom.NAME)
 
   case RULES  (rules: List[SlexAtom.RULE])
 
